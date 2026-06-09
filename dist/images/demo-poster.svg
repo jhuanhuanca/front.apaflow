@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" fill="none">
+  <rect width="1280" height="720" fill="#F5F5F5"/>
+  <rect x="80" y="60" width="1120" height="600" rx="8" fill="#FFFFFF" stroke="#E5E5E5" stroke-width="2"/>
+  <rect x="120" y="110" width="320" height="12" rx="2" fill="#D4D4D4"/>
+  <rect x="120" y="140" width="520" height="8" rx="2" fill="#E5E5E5"/>
+  <rect x="120" y="160" width="480" height="8" rx="2" fill="#E5E5E5"/>
+  <rect x="120" y="180" width="500" height="8" rx="2" fill="#E5E5E5"/>
+  <rect x="120" y="220" width="200" height="10" rx="2" fill="#0A0A0A"/>
+  <rect x="120" y="250" width="440" height="8" rx="2" fill="#E5E5E5"/>
+  <rect x="120" y="270" width="460" height="8" rx="2" fill="#E5E5E5"/>
+  <circle cx="640" cy="360" r="52" fill="#0A0A0A" opacity="0.92"/>
+  <path d="M620 330 L680 360 L620 390 Z" fill="#FFFFFF"/>
+  <text x="640" y="470" text-anchor="middle" font-family="system-ui,sans-serif" font-size="22" fill="#525252">Demo · Formato APA 7</text>
+</svg>
