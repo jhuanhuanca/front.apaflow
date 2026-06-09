@@ -1,0 +1,37 @@
+export default {
+  login: {
+    title: 'Iniciar sesión',
+    submitting: 'Entrando…',
+    noAccount: '¿No tienes cuenta?',
+    signUp: 'Regístrate',
+  },
+  register: {
+    title: 'Crear cuenta',
+    upgradeTitle: 'Descarga gratuita usada',
+    upgradeSubtitle: 'Crea tu cuenta y continúa',
+    upgradeDesc: 'Elige cómo quieres seguir: paga solo esta descarga o suscríbete a Pro con conversiones ilimitadas.',
+    desc: 'Regístrate para guardar documentos y acceder al catálogo completo.',
+    backToPanel: 'Volver al panel',
+    hasAccount: '¿Ya tienes cuenta?',
+    signIn: 'Inicia sesión',
+    creating: 'Creando…',
+    singleDoc: 'Solo este documento',
+    perDownload: 'USD / descarga',
+    perMonth: 'USD / mes',
+    singleBullets: [
+      'Una descarga del .docx formateado',
+      'Ideal si solo necesitas entregar ahora',
+    ],
+    proBullets: [
+      'Descargas y conversiones ilimitadas',
+      'Carreras y plantillas premium',
+    ],
+    formTitleUpgrade: 'Registro para continuar',
+    formTitleDefault: 'Datos de acceso',
+    selectedPlan: 'Plan seleccionado:',
+    selectedPro: 'Pro $5.99/mes',
+    selectedSingle: 'Descarga única $0.99',
+    submitPro: 'Crear cuenta y suscribirme a Pro',
+    submitSingle: 'Crear cuenta y pagar $0.99',
+  },
+};

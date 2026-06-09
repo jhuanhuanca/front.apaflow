@@ -1,0 +1,37 @@
+export default {
+  login: {
+    title: 'Log in',
+    submitting: 'Signing in…',
+    noAccount: "Don't have an account?",
+    signUp: 'Sign up',
+  },
+  register: {
+    title: 'Create account',
+    upgradeTitle: 'Free download used',
+    upgradeSubtitle: 'Create your account and continue',
+    upgradeDesc: 'Choose how to continue: pay for this download only or subscribe to Pro with unlimited conversions.',
+    desc: 'Sign up to save documents and access the full catalog.',
+    backToPanel: 'Back to dashboard',
+    hasAccount: 'Already have an account?',
+    signIn: 'Log in',
+    creating: 'Creating…',
+    singleDoc: 'This document only',
+    perDownload: 'USD / download',
+    perMonth: 'USD / month',
+    singleBullets: [
+      'One download of the formatted .docx',
+      'Ideal if you only need to submit now',
+    ],
+    proBullets: [
+      'Unlimited downloads and conversions',
+      'Premium careers and templates',
+    ],
+    formTitleUpgrade: 'Sign up to continue',
+    formTitleDefault: 'Account details',
+    selectedPlan: 'Selected plan:',
+    selectedPro: 'Pro $5.99/month',
+    selectedSingle: 'Single download $0.99',
+    submitPro: 'Create account and subscribe to Pro',
+    submitSingle: 'Create account and pay $0.99',
+  },
+};

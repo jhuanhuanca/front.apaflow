@@ -1,0 +1,27 @@
+$color-midnight: #ffffff;
+$color-deep: #f3f7fc;
+$color-accent: #1a3f8c;
+$color-accent-light: #06b6d4;
+$color-surface: #f8fafd;
+$color-cream: #ffffff;
+$color-ink: #0a0a0a;
+$color-line: #e2e8f0;
+$color-brand: #1a3f8c;
+$color-flow: #06b6d4;
+$color-brand-50: #eef4ff;
+$color-flow-50: #ecfeff;
+
+:root {
+  --midnight: #{$color-midnight};
+  --deep: #{$color-deep};
+  --accent: #{$color-accent};
+  --accent-light: #{$color-accent-light};
+  --surface: #{$color-surface};
+  --cream: #{$color-cream};
+  --ink: #{$color-ink};
+  --line: #{$color-line};
+  --brand: #{$color-brand};
+  --flow: #{$color-flow};
+  --brand-50: #{$color-brand-50};
+  --flow-50: #{$color-flow-50};
+}

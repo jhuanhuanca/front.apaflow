@@ -1,0 +1,12 @@
+node_modules
+dist
+.DS_Store
+
+# Secretos — nunca commitear
+.env
+.env.local
+.env.production
+.env.staging
+.env.*.local
+!.env.example
+!.env.*.example
