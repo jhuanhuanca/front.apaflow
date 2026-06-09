@@ -5,6 +5,18 @@ import { fileURLToPath, URL } from 'node:url';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
+  if (mode === 'production') {
+    const api = env.VITE_API_BASE_URL || '';
+    if (!api || /localhost|127\.0\.0\.1/i.test(api)) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        '[build] VITE_API_BASE_URL no apunta a producción (valor:',
+        api || '(vacío)',
+        '). En apaflow.shop se usará https://api.apaflow.shop automáticamente.',
+      );
+    }
+  }
+
   return {
     plugins: [vue()],
     resolve: {

@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { apiBaseURL } from '@/config/appConfig';
 
-const baseURL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+const baseURL = apiBaseURL;
 
 /**
  * Cliente API panel admin: Bearer Sanctum (guard admin), sin cookies CSRF de usuario.

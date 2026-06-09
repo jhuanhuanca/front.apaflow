@@ -4,7 +4,9 @@ import adminHttp from '@/services/adminApi';
 import PsPageHeader from '@panelsaas/components/PsPageHeader.vue';
 import PsDataTable from '@panelsaas/components/PsDataTable.vue';
 
-const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+import { apiBaseURL } from '@/config/appConfig';
+
+const base = apiBaseURL;
 
 function storageUrl(path) {
   if (!path) return '';

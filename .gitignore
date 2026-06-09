@@ -1,4 +1,8 @@
+node_modules
+.DS_Store
 
+# dist/ se versiona en Git para deploy en servidores sin RAM para npm build
+# Generar en local: npm run build:prod (ver deploy/scripts/build-frontend-production.sh)
 
 # Secretos — nunca commitear
 .env

@@ -1,14 +1,12 @@
 import axios, { AxiosHeaders } from 'axios';
+import { apiBaseURL } from '@/config/appConfig';
 
 /**
  * URL base de Laravel (sin /api).
- * Debe usar el MISMO hostname que la SPA (localhost con localhost, o 127.0.0.1 con 127.0.0.1).
- * Config compartida: GET {baseURL}/api/config (ver stores/clientConfig.js).
- * Mezclar localhost:5173 con 127.0.0.1:8000 → cross-site → cookies Lax no van en POST → 419.
+ * Ver src/config/appConfig.js (VITE_*, runtime-config.js, fallback apaflow.shop).
  */
-export const apiBaseURL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+export { apiBaseURL };
 
-/** @deprecated Usar apiBaseURL */
 const laravelBaseURL = apiBaseURL;
 
 if (import.meta.env.DEV && typeof window !== 'undefined') {
