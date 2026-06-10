@@ -139,8 +139,7 @@ http.interceptors.response.use(
       status === 419 &&
       cfg &&
       !cfg.__sanctumCsrfRetried &&
-      ['post', 'put', 'patch', 'delete'].includes(method) &&
-      !(cfg.data instanceof FormData)
+      ['post', 'put', 'patch', 'delete'].includes(method)
     ) {
       cfg.__sanctumCsrfRetried = true;
       await initSanctumSpaOnce({ force: true });
