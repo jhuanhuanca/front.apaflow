@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, watch, nextTick } from 'vue';
 import { Play } from 'lucide-vue-next';
 import { DEMO_VIDEO } from '@/constants/siteMedia';
 
@@ -7,6 +7,18 @@ const videoRef = ref(null);
 const src = ref(DEMO_VIDEO.mp4);
 const triedFallback = ref(false);
 const videoError = ref(false);
+
+async function tryPlay() {
+  const el = videoRef.value;
+  if (!el || videoError.value) {
+    return;
+  }
+  try {
+    await el.play();
+  } catch {
+    // Navegadores bloquean autoplay con sonido; muted en el markup lo evita.
+  }
+}
 
 function onError() {
   if (!triedFallback.value && DEMO_VIDEO.fallbackMp4) {
@@ -16,6 +28,13 @@ function onError() {
   }
   videoError.value = true;
 }
+
+onMounted(() => tryPlay());
+
+watch(src, async () => {
+  await nextTick();
+  tryPlay();
+});
 </script>
 
 <template>
@@ -35,11 +54,15 @@ function onError() {
         ref="videoRef"
         :key="src"
         class="w-full aspect-video bg-ink object-cover"
-        controls
+        autoplay
+        loop
+        muted
         playsinline
-        preload="metadata"
+        preload="auto"
         :poster="DEMO_VIDEO.poster"
+        :aria-label="DEMO_VIDEO.title"
         @error="onError"
+        @loadeddata="tryPlay"
       >
         <source :src="src" type="video/mp4" />
         Tu navegador no soporta reproducción de video.
