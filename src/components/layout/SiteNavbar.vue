@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { RouterLink, useRoute } from 'vue-router';
-import { Menu, X, Search } from 'lucide-vue-next';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
+import { LogOut, Menu, X, Search } from 'lucide-vue-next';
 import AppLogo from '@/components/brand/AppLogo.vue';
 import LanguageSwitcher from '@/components/layout/LanguageSwitcher.vue';
 import { useSiteNav } from '@/composables/useSiteNav';
@@ -10,6 +10,7 @@ import { useRoutePrefetch } from '@/composables/useRoutePrefetch';
 import { useAuthStore } from '@/stores/auth';
 
 const route = useRoute();
+const router = useRouter();
 const auth = useAuthStore();
 const { mainNav } = useSiteNav();
 const { t } = useI18n();
@@ -25,6 +26,22 @@ function isActive(item) {
 
 function closeMenu() {
   open.value = false;
+}
+
+const loggingOut = ref(false);
+
+async function handleLogout() {
+  if (loggingOut.value) {
+    return;
+  }
+  loggingOut.value = true;
+  try {
+    await auth.logout();
+    closeMenu();
+    await router.push('/');
+  } finally {
+    loggingOut.value = false;
+  }
 }
 </script>
 
@@ -85,6 +102,15 @@ function closeMenu() {
             <RouterLink to="/apa-generator" class="btn-nav-solid">
               {{ t('common.actions.useGenerator') }}
             </RouterLink>
+            <button
+              type="button"
+              class="btn-nav-outline inline-flex items-center gap-2"
+              :disabled="loggingOut"
+              @click="handleLogout"
+            >
+              <LogOut class="w-4 h-4" />
+              {{ loggingOut ? t('common.actions.loading') : t('common.actions.logout') }}
+            </button>
           </template>
           <template v-else>
             <RouterLink to="/register" class="btn-nav-solid">
@@ -147,6 +173,15 @@ function closeMenu() {
           <RouterLink to="/apa-generator" class="btn-nav-solid w-full text-center" @click="closeMenu">
             {{ t('common.actions.useGenerator') }}
           </RouterLink>
+          <button
+            type="button"
+            class="btn-nav-outline w-full inline-flex items-center justify-center gap-2"
+            :disabled="loggingOut"
+            @click="handleLogout"
+          >
+            <LogOut class="w-4 h-4" />
+            {{ loggingOut ? t('common.actions.loading') : t('common.actions.logout') }}
+          </button>
         </template>
         <template v-else>
           <RouterLink to="/register" class="btn-nav-solid w-full text-center" @click="closeMenu">

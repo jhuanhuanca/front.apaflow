@@ -5,6 +5,7 @@ import http from '@/services/api';
 import { usePaddle } from '@/composables/usePaddle';
 import { useI18n } from '@/composables/useI18n';
 import { useAuthStore } from '@/stores/auth';
+import { useClientConfigStore } from '@/stores/clientConfig';
 
 const props = defineProps({
   formattedPrice: { type: String, default: '$5.99' },
@@ -13,6 +14,7 @@ const props = defineProps({
 const emit = defineEmits(['upgraded', 'close']);
 
 const auth = useAuthStore();
+const clientConfig = useClientConfigStore();
 const paddle = usePaddle();
 const { t } = useI18n();
 
@@ -40,10 +42,8 @@ async function startPaddleFlow() {
   submitting.value = true;
   error.value = '';
   try {
-    if (transactionId.value) {
-      await paddle.openCheckout(transactionId.value);
-    } else if (checkoutUrl.value) {
-      await paddle.openCheckoutUrl(checkoutUrl.value);
+    if (transactionId.value || checkoutUrl.value) {
+      await paddle.openCheckout(transactionId.value, checkoutUrl.value);
     } else {
       throw new Error(t('billing.pro.errors.incomplete'));
     }
@@ -66,6 +66,21 @@ async function startPaddleFlow() {
 async function initiateCheckout() {
   loading.value = true;
   error.value = '';
+
+  if (!clientConfig.loaded) {
+    try {
+      await clientConfig.bootstrap();
+    } catch {
+      /* noop */
+    }
+  }
+
+  if (clientConfig.paymentProvider === 'none') {
+    error.value = t('billing.pro.errors.paymentsDisabled');
+    loading.value = false;
+    return;
+  }
+
   try {
     const { data } = await http.post('/api/billing/pro-subscription/initiate');
     paymentId.value = data.payment?.id ?? null;
@@ -85,7 +100,12 @@ async function initiateCheckout() {
       await startPaddleFlow();
     }
   } catch (e) {
-    error.value = e?.response?.data?.message || t('billing.pro.errors.initFailed');
+    const code = e?.response?.data?.code;
+    if (code === 'PAYMENTS_DISABLED') {
+      error.value = e?.response?.data?.message || t('billing.pro.errors.paymentsDisabled');
+    } else {
+      error.value = e?.response?.data?.message || t('billing.pro.errors.initFailed');
+    }
   } finally {
     loading.value = false;
   }

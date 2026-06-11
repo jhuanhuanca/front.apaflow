@@ -31,6 +31,8 @@ export default {
       initFailed: 'Could not start Pro checkout.',
       confirmFailed: 'Could not confirm Pro payment.',
       notStarted: 'Checkout not started. Close and try again.',
+      paymentsDisabled:
+        'Payments are not configured on the server. Contact the administrator or configure Paddle in .env.',
     },
   },
   subscription: {

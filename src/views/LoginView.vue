@@ -1,10 +1,12 @@
 ﻿<script setup>
 import { ref } from 'vue';
 import { useRouter, useRoute, RouterLink } from 'vue-router';
+import { LogOut } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
 import { useI18n } from '@/composables/useI18n';
 import { PENDING_DOC_KEY, SELECTED_PLAN_KEY } from '@/constants/guestBilling';
 import AppLogo from '@/components/brand/AppLogo.vue';
+import PasswordField from '@/components/forms/PasswordField.vue';
 import LanguageSwitcher from '@/components/layout/LanguageSwitcher.vue';
 
 const router = useRouter();
@@ -16,6 +18,17 @@ const email = ref('');
 const password = ref('');
 const error = ref('');
 const loading = ref(false);
+const loggingOut = ref(false);
+
+async function handleLogout() {
+  loggingOut.value = true;
+  try {
+    await auth.logout();
+    await router.push('/');
+  } finally {
+    loggingOut.value = false;
+  }
+}
 
 async function submit() {
   error.value = '';
@@ -54,6 +67,25 @@ async function submit() {
         <h1 class="font-display text-2xl">{{ t('auth.login.title') }}</h1>
         <RouterLink to="/" class="text-ink-faint hover:text-ink text-sm">{{ t('common.actions.home') }}</RouterLink>
       </div>
+
+      <div
+        v-if="auth.isAuthenticated"
+        class="mb-5 rounded-xl border border-line bg-surface/60 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+      >
+        <p class="text-sm text-ink-muted">
+          {{ t('auth.login.alreadySignedIn', { email: auth.user?.email || '' }) }}
+        </p>
+        <button
+          type="button"
+          class="inline-flex items-center justify-center gap-2 text-sm border border-line hover:border-brand/30 px-3 py-2 rounded-full"
+          :disabled="loggingOut"
+          @click="handleLogout"
+        >
+          <LogOut class="w-4 h-4" />
+          {{ loggingOut ? t('common.actions.loading') : t('common.actions.logout') }}
+        </button>
+      </div>
+
       <form class="space-y-4" @submit.prevent="submit">
         <div>
           <label for="email" class="block text-sm text-ink-muted mb-1.5">{{ t('common.forms.email') }}</label>
@@ -66,17 +98,14 @@ async function submit() {
             :placeholder="t('common.forms.emailPlaceholder')"
           />
         </div>
-        <div>
-          <label for="password" class="block text-sm text-ink-muted mb-1.5">{{ t('common.forms.password') }}</label>
-          <input
-            id="password"
-            v-model="password"
-            type="password"
-            required
-            class="w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm text-ink placeholder:text-ink-faint"
-            placeholder="••••••••"
-          />
-        </div>
+        <PasswordField
+          id="password"
+          v-model="password"
+          :label="t('common.forms.password')"
+          placeholder="••••••••"
+          autocomplete="current-password"
+          required
+        />
         <p v-if="error" class="text-sm text-red-400">{{ error }}</p>
         <button
           type="submit"

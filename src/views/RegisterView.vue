@@ -11,6 +11,7 @@ import {
   savePendingDocId,
 } from '@/constants/guestBilling';
 import AppLogo from '@/components/brand/AppLogo.vue';
+import PasswordField from '@/components/forms/PasswordField.vue';
 import LanguageSwitcher from '@/components/layout/LanguageSwitcher.vue';
 import { useI18n } from '@/composables/useI18n';
 
@@ -225,29 +226,23 @@ async function submit() {
               :placeholder="t('common.forms.emailPlaceholder')"
             />
           </div>
-          <div>
-            <label class="block text-sm text-ink-muted mb-1.5" for="password">{{ t('common.forms.password') }}</label>
-            <input
-              id="password"
-              v-model="password"
-              type="password"
-              required
-              minlength="8"
-              class="w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm text-ink placeholder:text-ink-faint"
-              :placeholder="t('common.forms.passwordPlaceholder')"
-            />
-          </div>
-          <div>
-            <label class="block text-sm text-ink-muted mb-1.5" for="pc">{{ t('common.forms.confirmPassword') }}</label>
-            <input
-              id="pc"
-              v-model="password_confirmation"
-              type="password"
-              required
-              class="w-full bg-surface border border-line rounded-xl px-4 py-3 text-sm text-ink placeholder:text-ink-faint"
-              :placeholder="t('common.forms.confirmPasswordPlaceholder')"
-            />
-          </div>
+          <PasswordField
+            id="password"
+            v-model="password"
+            :label="t('common.forms.password')"
+            :placeholder="t('common.forms.passwordPlaceholder')"
+            autocomplete="new-password"
+            :minlength="8"
+            required
+          />
+          <PasswordField
+            id="pc"
+            v-model="password_confirmation"
+            :label="t('common.forms.confirmPassword')"
+            :placeholder="t('common.forms.confirmPasswordPlaceholder')"
+            autocomplete="new-password"
+            required
+          />
           <p v-if="error" class="text-sm text-red-400">{{ error }}</p>
           <button
             type="submit"

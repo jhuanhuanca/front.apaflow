@@ -40,7 +40,10 @@ export function usePaddle() {
   const error = ref('');
 
   function isPaddleProvider() {
-    return clientConfig.paymentProvider === 'paddle' && clientConfig.paddle?.enabled;
+    return (
+      clientConfig.paymentProvider === 'paddle'
+      && (clientConfig.paddle?.server_enabled || clientConfig.paddle?.enabled)
+    );
   }
 
   async function ensureInitialized() {
@@ -66,7 +69,11 @@ export function usePaddle() {
     }
   }
 
-  async function openCheckout(transactionId) {
+  async function openCheckout(transactionId, checkoutUrl = null) {
+    if (checkoutUrl) {
+      await openCheckoutUrl(checkoutUrl);
+      return;
+    }
     if (!transactionId) {
       throw new Error('Falta transaction_id de Paddle.');
     }

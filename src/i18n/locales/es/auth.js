@@ -4,6 +4,7 @@ export default {
     submitting: 'Entrando…',
     noAccount: '¿No tienes cuenta?',
     signUp: 'Regístrate',
+    alreadySignedIn: 'Ya iniciaste sesión como {email}.',
   },
   register: {
     title: 'Crear cuenta',

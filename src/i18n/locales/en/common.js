@@ -49,6 +49,8 @@ export default {
     namePlaceholder: 'Jane Doe',
     passwordPlaceholder: 'At least 8 characters',
     confirmPasswordPlaceholder: 'Repeat your password',
+    showPassword: 'Show password',
+    hidePassword: 'Hide password',
   },
   errors: {
     generic: 'Something went wrong. Please try again.',

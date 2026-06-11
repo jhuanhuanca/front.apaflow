@@ -49,6 +49,8 @@ export default {
     namePlaceholder: 'Juan Pérez',
     passwordPlaceholder: 'Mínimo 8 caracteres',
     confirmPasswordPlaceholder: 'Repite la contraseña',
+    showPassword: 'Mostrar contraseña',
+    hidePassword: 'Ocultar contraseña',
   },
   errors: {
     generic: 'Ocurrió un error. Intenta de nuevo.',
