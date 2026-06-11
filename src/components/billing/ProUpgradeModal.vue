@@ -100,11 +100,15 @@ async function initiateCheckout() {
       await startPaddleFlow();
     }
   } catch (e) {
-    const code = e?.response?.data?.code;
+    const data = e?.response?.data ?? {};
+    const code = data.code;
+    const detail = data.detail ? ` (${data.detail})` : '';
     if (code === 'PAYMENTS_DISABLED') {
-      error.value = e?.response?.data?.message || t('billing.pro.errors.paymentsDisabled');
+      error.value = data.message || t('billing.pro.errors.paymentsDisabled');
+    } else if (code === 'PADDLE_INIT_FAILED') {
+      error.value = (data.message || t('billing.pro.errors.initFailed')) + detail;
     } else {
-      error.value = e?.response?.data?.message || t('billing.pro.errors.initFailed');
+      error.value = data.message || t('billing.pro.errors.initFailed');
     }
   } finally {
     loading.value = false;
