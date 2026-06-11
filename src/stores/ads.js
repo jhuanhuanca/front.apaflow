@@ -7,8 +7,8 @@ import { useSubscriptionStore } from '@/stores/subscription';
 import { ADS_BLOCKED_ROUTE_NAMES } from '@/constants/ads';
 
 /**
- * Fuente única de permisos de anuncios en el frontend.
- * guest => true, free => true, pro => false
+ * Permisos de anuncios (guest/free => sí, Pro => no).
+ * El script de AdSense vive en index.html; este store queda para API/admin y futura lógica SPA.
  */
 export const useAdsStore = defineStore('ads', () => {
   const auth = useAuthStore();
@@ -20,11 +20,7 @@ export const useAdsStore = defineStore('ads', () => {
 
   const enabled = computed(() => Boolean(config.value?.enabled));
 
-  const provider = computed(() => config.value?.provider || 'placeholder');
-
-  const slots = computed(() => config.value?.slots ?? {});
-
-  const lazyLoad = computed(() => config.value?.lazy_load !== false);
+  const provider = computed(() => config.value?.provider || 'adsense');
 
   const canShowAds = computed(() => {
     if (!enabled.value) {
@@ -48,22 +44,10 @@ export const useAdsStore = defineStore('ads', () => {
     return !blocked.some((p) => route.path === p || route.path.startsWith(`${p}/`));
   });
 
-  function slotFor(location) {
-    return slots.value[location] || '';
-  }
-
-  function isAdSenseReady(location) {
-    return provider.value === 'adsense' && Boolean(slotFor(location));
-  }
-
   return {
     enabled,
     provider,
-    slots,
-    lazyLoad,
     canShowAds,
     canShowAdsInCurrentRoute,
-    slotFor,
-    isAdSenseReady,
   };
 });

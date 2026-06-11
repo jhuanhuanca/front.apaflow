@@ -50,10 +50,9 @@ export const useClientConfigStore = defineStore('clientConfig', () => {
 
   const ads = ref({
     enabled: true,
-    provider: 'placeholder',
+    provider: 'adsense',
+    publisher_client: 'ca-pub-2981754691104078',
     lazy_load: true,
-    slots: {},
-    inline_interval: 3,
     blocked_paths: [],
   });
 

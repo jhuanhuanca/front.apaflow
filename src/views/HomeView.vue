@@ -22,9 +22,6 @@ import {
 } from '@/composables/useLocalizedPageSeo';
 import { useI18n } from '@/composables/useI18n';
 import { useClientConfigStore } from '@/stores/clientConfig';
-import AdBanner from '@/components/ads/AdBanner.vue';
-import AdFooter from '@/components/ads/AdFooter.vue';
-import { AD_LOCATIONS } from '@/constants/ads';
 
 const clientConfig = useClientConfigStore();
 const { t, tm, locale } = useI18n();
@@ -65,10 +62,6 @@ useLocalizedPageSeo({
 
 <template>
   <div>
-    <div class="page-shell pt-4 sm:pt-6">
-      <AdBanner :location="AD_LOCATIONS.HOME_TOP" class="!mt-0" />
-    </div>
-
     <section class="relative overflow-hidden">
       <div class="absolute inset-0 bg-hero-glow pointer-events-none" aria-hidden="true" />
       <div class="page-shell relative pt-6 sm:pt-10 pb-14 sm:pb-18">
@@ -110,10 +103,6 @@ useLocalizedPageSeo({
         <p class="text-ink-muted leading-relaxed">{{ t('home.whatIs.p2') }}</p>
       </div>
     </section>
-
-    <div class="page-shell">
-      <AdBanner :location="AD_LOCATIONS.HOME_MID" />
-    </div>
 
     <section id="beneficios" class="page-shell py-14 sm:py-16 scroll-anchor">
       <h2 class="font-display text-2xl sm:text-3xl text-ink mb-8 text-center">{{ t('home.benefits.title') }}</h2>
@@ -237,10 +226,6 @@ useLocalizedPageSeo({
         <FaqAccordion :items="homeFaq" />
       </div>
     </section>
-
-    <div class="page-shell">
-      <AdFooter :location="AD_LOCATIONS.HOME_PRE_FOOTER" />
-    </div>
 
     <section class="page-shell py-14 sm:py-20">
       <CtaBanner
