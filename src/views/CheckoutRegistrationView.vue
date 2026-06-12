@@ -5,6 +5,7 @@ import { Download, Crown, Loader2, ShieldCheck } from 'lucide-vue-next';
 import http from '@/services/api';
 import { useAuthStore } from '@/stores/auth';
 import { useClientConfigStore } from '@/stores/clientConfig';
+import { usePaddle } from '@/composables/usePaddle';
 import {
   PLAN_PAY_PER_DOWNLOAD,
   PLAN_PREMIUM,
@@ -12,11 +13,12 @@ import {
   readPendingDocId,
   clearPendingDocId,
 } from '@/constants/guestBilling';
-import { parsePaddleInitiateResponse, redirectToPaddleCheckout } from '@/utils/billingCheckout';
+import { openPaddleCheckoutFromResponse } from '@/utils/billingCheckout';
 import AppLogo from '@/components/brand/AppLogo.vue';
 
 const auth = useAuthStore();
 const clientConfig = useClientConfigStore();
+const paddle = usePaddle();
 const router = useRouter();
 const route = useRoute();
 
@@ -126,16 +128,12 @@ async function startProPaddleCheckout() {
   error.value = '';
   try {
     const { data } = await http.post('/api/billing/registration-checkout/initiate');
-    const parsed = parsePaddleInitiateResponse(data);
-
-    if (parsed.success && parsed.checkoutUrl) {
-      redirectToPaddleCheckout(parsed.checkoutUrl);
-      return;
-    }
-
-    throw new Error(parsed.error || 'No se recibió checkout_url de Paddle.');
+    await openPaddleCheckoutFromResponse(data, { clientConfig, paddle });
+    loading.value = false;
+    submitting.value = false;
   } catch (e) {
-    error.value = e?.response?.data?.error || e?.response?.data?.message || e?.message || 'No se pudo iniciar el checkout Pro.';
+    error.value = e?.response?.data?.error || e?.response?.data?.message || paddle.error.value || e?.message || 'No se pudo iniciar el checkout Pro.';
+    loading.value = false;
     submitting.value = false;
   }
 }
@@ -228,7 +226,7 @@ onMounted(loadStatus);
     <div class="site-nav-offset-checkout flex-1 flex items-center justify-center px-4 py-8 sm:py-12 pb-[max(2rem,env(safe-area-inset-bottom))]">
       <div v-if="loading || (isPaddle && submitting)" class="flex flex-col items-center gap-3 text-ink-muted text-sm">
         <Loader2 class="w-5 h-5 animate-spin" />
-        <span v-if="isPaddle && isProPlan">Redirigiendo al checkout seguro de Paddle…</span>
+        <span v-if="isPaddle && isProPlan">Abriendo checkout seguro de Paddle…</span>
         <span v-else-if="isPaddle && isPayPerDownload">Activando tu cuenta gratuita…</span>
         <span v-else>Cargando checkout…</span>
       </div>

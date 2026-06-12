@@ -4,7 +4,8 @@ import { Crown, Loader2, X } from 'lucide-vue-next';
 import http from '@/services/api';
 import { useI18n } from '@/composables/useI18n';
 import { useClientConfigStore } from '@/stores/clientConfig';
-import { parsePaddleInitiateResponse, redirectToPaddleCheckout } from '@/utils/billingCheckout';
+import { usePaddle } from '@/composables/usePaddle';
+import { openPaddleCheckoutFromResponse } from '@/utils/billingCheckout';
 
 const props = defineProps({
   formattedPrice: { type: String, default: '$5.99' },
@@ -13,6 +14,7 @@ const props = defineProps({
 const emit = defineEmits(['upgraded', 'close']);
 
 const clientConfig = useClientConfigStore();
+const paddle = usePaddle();
 const { t } = useI18n();
 
 const loading = ref(true);
@@ -42,19 +44,14 @@ async function initiateCheckout() {
 
   try {
     const { data } = await http.post('/api/billing/pro-subscription/initiate');
-    const parsed = parsePaddleInitiateResponse(data);
 
-    if (parsed.success && parsed.checkoutUrl) {
-      redirectToPaddleCheckout(parsed.checkoutUrl);
-      return;
-    }
-
-    if (isDemo.value && parsed.raw?.payment?.id) {
+    if (isDemo.value && data?.payment?.id) {
       loading.value = false;
       return;
     }
 
-    throw new Error(parsed.error || t('billing.pro.errors.intentFailed'));
+    await openPaddleCheckoutFromResponse(data, { clientConfig, paddle });
+    loading.value = false;
   } catch (e) {
     const data = e?.response?.data ?? {};
     const code = data.code;
@@ -64,7 +61,7 @@ async function initiateCheckout() {
       const detail = data.detail ? ` (${data.detail})` : '';
       error.value = (data.error || data.message || t('billing.pro.errors.initFailed')) + detail;
     } else {
-      error.value = data.error || data.message || e?.message || t('billing.pro.errors.initFailed');
+      error.value = data.error || data.message || paddle.error.value || e?.message || t('billing.pro.errors.initFailed');
     }
     loading.value = false;
   }
@@ -139,7 +136,7 @@ onMounted(initiateCheckout);
 
         <template v-else>
           <p v-if="error" class="text-sm text-red-400">{{ error }}</p>
-          <p v-else class="text-sm text-ink-muted">{{ t('billing.pro.paddleRedirect') }}</p>
+          <p v-else class="text-sm text-ink-muted">{{ t('billing.pro.paddleOverlay') }}</p>
           <button
             v-if="error"
             type="button"

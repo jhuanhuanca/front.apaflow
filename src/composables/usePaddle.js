@@ -49,8 +49,10 @@ export function usePaddle() {
 
   async function ensureInitialized() {
     const paddleConfig = clientConfig.paddle;
-    if (!paddleConfig?.enabled || !paddleConfig?.client_token) {
-      throw new Error('Paddle no está configurado en el servidor.');
+    if (!paddleConfig?.client_token) {
+      throw new Error(
+        'Falta PADDLE_CLIENT_TOKEN en el servidor. Configúralo en Paddle → Developer tools → Client-side tokens.',
+      );
     }
 
     initializing.value = true;

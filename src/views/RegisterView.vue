@@ -81,7 +81,12 @@ async function submit() {
   } catch (e) {
     const data = e?.response?.data ?? {};
     const bag = data.errors;
-    if (bag?.email?.some((m) => /already|registrado|taken|uso/i.test(String(m)))) {
+    const emailErrors = bag?.email ?? [];
+    const emailText = emailErrors.join(' ');
+    if (
+      emailErrors.length
+      && (emailText.includes('validation.unique') || emailText.includes('ya está registrado') || emailText.includes('already'))
+    ) {
       error.value = t('auth.register.errors.emailTaken');
     } else if (bag?.password) {
       error.value = bag.password.join(' ');
@@ -251,6 +256,9 @@ async function submit() {
             required
           />
           <p v-if="error" class="text-sm text-red-400">{{ error }}</p>
+          <p v-if="error === t('auth.register.errors.emailTaken')" class="text-sm text-center">
+            <RouterLink to="/login" class="text-accent hover:underline">{{ t('auth.register.signIn') }}</RouterLink>
+          </p>
           <button
             type="submit"
             class="w-full bg-accent text-cream hover:bg-brand-dark transition py-3 rounded-full font-medium text-sm disabled:opacity-60"

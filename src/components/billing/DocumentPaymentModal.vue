@@ -4,7 +4,8 @@ import { Loader2, X } from 'lucide-vue-next';
 import http from '@/services/api';
 import { useI18n } from '@/composables/useI18n';
 import { useClientConfigStore } from '@/stores/clientConfig';
-import { parsePaddleInitiateResponse, redirectToPaddleCheckout } from '@/utils/billingCheckout';
+import { usePaddle } from '@/composables/usePaddle';
+import { openPaddleCheckoutFromResponse } from '@/utils/billingCheckout';
 
 const props = defineProps({
   documentId: { type: [Number, String], required: true },
@@ -14,10 +15,10 @@ const props = defineProps({
 const emit = defineEmits(['paid', 'close']);
 
 const clientConfig = useClientConfigStore();
+const paddle = usePaddle();
 const { t } = useI18n();
 
 const loading = ref(true);
-const submitting = ref(false);
 const error = ref('');
 const isDemo = ref(false);
 
@@ -47,23 +48,19 @@ async function initiateCheckout() {
     }
 
     const { data } = await http.post('/api/billing/complete-document-payment', payload);
-    const parsed = parsePaddleInitiateResponse(data);
-
-    if (parsed.success && parsed.checkoutUrl) {
-      redirectToPaddleCheckout(parsed.checkoutUrl);
-      return;
-    }
 
     if (isDemo.value && data?.document) {
       emit('paid', data.document);
       return;
     }
 
-    throw new Error(parsed.error || t('billing.document.errors.createFailed'));
+    await openPaddleCheckoutFromResponse(data, { clientConfig, paddle });
+    loading.value = false;
   } catch (e) {
     error.value =
       e?.response?.data?.error
       || e?.response?.data?.message
+      || paddle.error.value
       || e?.message
       || t('billing.document.errors.initFailed');
     loading.value = false;
@@ -87,14 +84,14 @@ onMounted(initiateCheckout);
       </div>
 
       <div class="p-5 space-y-4">
-        <p v-if="loading || submitting" class="text-sm text-ink-muted flex items-center gap-2">
+        <p v-if="loading" class="text-sm text-ink-muted flex items-center gap-2">
           <Loader2 class="w-4 h-4 animate-spin" />
           {{ t('billing.document.preparing') }}
         </p>
 
         <template v-else>
           <p v-if="error" class="text-sm text-red-400">{{ error }}</p>
-          <p v-else class="text-sm text-ink-muted">{{ t('billing.document.paddleRedirect') }}</p>
+          <p v-else class="text-sm text-ink-muted">{{ t('billing.document.paddleOverlay') }}</p>
           <button
             v-if="error"
             type="button"
