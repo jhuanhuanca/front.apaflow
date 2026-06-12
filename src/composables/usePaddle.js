@@ -4,6 +4,11 @@ import { useClientConfigStore } from '@/stores/clientConfig';
 import { redirectToPaddleCheckout, extractPaddleTransactionId } from '@/utils/billingCheckout';
 
 let scriptPromise = null;
+let checkoutCompletedHandler = null;
+
+export function setPaddleCheckoutCompletedHandler(handler) {
+  checkoutCompletedHandler = handler;
+}
 
 function loadPaddleScript() {
   if (typeof window !== 'undefined' && window.Paddle) {
@@ -62,7 +67,14 @@ export function usePaddle() {
       const Paddle = await loadPaddleScript();
       const environment = paddleConfig.environment === 'production' ? 'production' : 'sandbox';
       Paddle.Environment.set(environment);
-      Paddle.Initialize({ token: paddleConfig.client_token });
+      Paddle.Initialize({
+        token: paddleConfig.client_token,
+        eventCallback: (event) => {
+          if (event?.name === 'checkout.completed') {
+            checkoutCompletedHandler?.(event);
+          }
+        },
+      });
       return Paddle;
     } catch (e) {
       error.value = e?.message || 'Error al inicializar Paddle.';
@@ -127,5 +139,6 @@ export function usePaddle() {
     openCheckout,
     openCheckoutUrl,
     pollPaymentStatus,
+    setPaddleCheckoutCompletedHandler,
   };
 }

@@ -18,7 +18,7 @@ import {
   readGuestDownloadCount,
   savePendingDocId,
 } from '@/constants/guestBilling';
-import { waitForDocumentDownloadReady } from '@/utils/billingCheckout';
+import { waitForDocumentDownloadReady, syncDocumentPayment } from '@/utils/billingCheckout';
 import { useI18n } from '@/composables/useI18n';
 import { useSiteNav } from '@/composables/useSiteNav';
 
@@ -106,11 +106,39 @@ function guestProcessNeedsPaywallLocal() {
 const guestDownloadNeedsPaywall = () =>
   guestDownloadNeedsUpgrade(clientConfig.guestMaxFreeDownloads);
 
+async function syncPendingDocumentPayments() {
+  if (!auth.isAuthenticated) {
+    return;
+  }
+  const pending = documents.value.filter((d) => d.billing_status === 'pending_payment');
+  if (!pending.length) {
+    return;
+  }
+  let changed = false;
+  await Promise.all(
+    pending.map(async (doc) => {
+      try {
+        const { data } = await syncDocumentPayment(http, doc.id);
+        if (data?.document?.billing_status === 'paid' || data?.synced) {
+          changed = true;
+        }
+      } catch {
+        /* noop */
+      }
+    }),
+  );
+  if (changed) {
+    const { data } = await http.get('/api/documents');
+    documents.value = Array.isArray(data) ? data : [];
+  }
+}
+
 async function loadDocuments() {
   try {
     if (auth.isAuthenticated) {
       const { data } = await http.get('/api/documents');
       documents.value = Array.isArray(data) ? data : [];
+      await syncPendingDocumentPayments();
     } else {
       const { data } = await http.get('/api/guest/documents');
       documents.value = Array.isArray(data) ? data : [];
@@ -373,6 +401,7 @@ onMounted(async () => {
     if (autoId != null && String(autoId).trim() !== '') {
       try {
         message.value = t('generator.messages.paidProcessing');
+        await syncDocumentPayment(http, String(autoId));
         await waitForDocumentDownloadReady(http, String(autoId));
         await downloadDoc(String(autoId));
       } catch (e) {

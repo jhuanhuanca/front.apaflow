@@ -1,11 +1,14 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { Loader2, X } from 'lucide-vue-next';
 import http from '@/services/api';
 import { useI18n } from '@/composables/useI18n';
 import { useClientConfigStore } from '@/stores/clientConfig';
-import { usePaddle } from '@/composables/usePaddle';
-import { openPaddleCheckoutFromResponse } from '@/utils/billingCheckout';
+import { usePaddle, setPaddleCheckoutCompletedHandler } from '@/composables/usePaddle';
+import {
+  openPaddleCheckoutFromResponse,
+  pollDocumentPaymentSync,
+} from '@/utils/billingCheckout';
 
 const props = defineProps({
   documentId: { type: [Number, String], required: true },
@@ -19,12 +22,33 @@ const paddle = usePaddle();
 const { t } = useI18n();
 
 const loading = ref(true);
+const confirming = ref(false);
 const error = ref('');
 const isDemo = ref(false);
+let pollAbort = false;
+
+async function confirmPaidAndClose() {
+  if (pollAbort) {
+    return;
+  }
+  confirming.value = true;
+  error.value = '';
+  try {
+    const data = await pollDocumentPaymentSync(http, props.documentId, {
+      intervalMs: 2000,
+      maxAttempts: 30,
+    });
+    emit('paid', data.document);
+  } catch (e) {
+    error.value = e?.message || t('billing.document.errors.completeFailed');
+    confirming.value = false;
+  }
+}
 
 async function initiateCheckout() {
   loading.value = true;
   error.value = '';
+  confirming.value = false;
 
   if (!clientConfig.loaded) {
     try {
@@ -54,8 +78,15 @@ async function initiateCheckout() {
       return;
     }
 
+    setPaddleCheckoutCompletedHandler(() => {
+      confirmPaidAndClose();
+    });
+
     await openPaddleCheckoutFromResponse(data, { clientConfig, paddle });
     loading.value = false;
+    confirming.value = true;
+
+    confirmPaidAndClose();
   } catch (e) {
     error.value =
       e?.response?.data?.error
@@ -64,8 +95,14 @@ async function initiateCheckout() {
       || e?.message
       || t('billing.document.errors.initFailed');
     loading.value = false;
+    confirming.value = false;
   }
 }
+
+onBeforeUnmount(() => {
+  pollAbort = true;
+  setPaddleCheckoutCompletedHandler(null);
+});
 
 onMounted(initiateCheckout);
 </script>
@@ -87,6 +124,11 @@ onMounted(initiateCheckout);
         <p v-if="loading" class="text-sm text-ink-muted flex items-center gap-2">
           <Loader2 class="w-4 h-4 animate-spin" />
           {{ t('billing.document.preparing') }}
+        </p>
+
+        <p v-else-if="confirming" class="text-sm text-ink-muted flex items-center gap-2">
+          <Loader2 class="w-4 h-4 animate-spin" />
+          {{ t('billing.document.confirming') }}
         </p>
 
         <template v-else>

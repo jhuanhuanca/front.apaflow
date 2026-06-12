@@ -2,10 +2,11 @@ export default {
   document: {
     title: 'Pay per document',
     preparing: 'Preparing checkout…',
+    confirming: 'Confirming payment with Paddle…',
     waiting: 'Waiting for payment confirmation…',
     paddleDesc: 'Pay {price} with Paddle to process and download this document.',
     paddleRedirect: 'You will be redirected to Paddle secure checkout…',
-    paddleOverlay: 'If you do not see checkout, click Retry. Paddle payment form should open.',
+    paddleOverlay: 'Complete payment in Paddle. We will confirm automatically.',
     retry: 'Retry payment',
     demoDesc: 'Pay {price} to process and download this document. Payment does not include future conversions.',
     reopenPaddle: 'Reopen Paddle checkout',

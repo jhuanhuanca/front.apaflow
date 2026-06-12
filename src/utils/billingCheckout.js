@@ -86,6 +86,45 @@ export function redirectToPaddleCheckout(checkoutUrl) {
 }
 
 /**
+ * Sincroniza con Paddle si el webhook aún no confirmó el pago del documento.
+ */
+export async function syncDocumentPayment(http, documentId) {
+  const { data } = await http.post('/api/billing/document-payment/sync', {
+    document_id: Number(documentId),
+  });
+  return data;
+}
+
+/**
+ * Espera confirmación del pago del documento (webhook o sync con Paddle API).
+ */
+export async function pollDocumentPaymentSync(http, documentId, {
+  intervalMs = 2500,
+  maxAttempts = 48,
+  onTick,
+} = {}) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const data = await syncDocumentPayment(http, documentId);
+    onTick?.(data);
+
+    if (data?.document?.billing_status === 'paid') {
+      return data;
+    }
+    if (data?.synced && data?.payment?.status === 'paid') {
+      return data;
+    }
+
+    await new Promise((resolve) => {
+      setTimeout(resolve, intervalMs);
+    });
+  }
+
+  throw new Error(
+    'El pago aún no se reflejó. Si ya pagaste, espera unos segundos y pulsa Actualizar.',
+  );
+}
+
+/**
  * Espera a que un documento esté listo para descargar (post-pago).
  */
 export async function waitForDocumentDownloadReady(http, documentId, {
