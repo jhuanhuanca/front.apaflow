@@ -17,6 +17,7 @@ import {
   readGuestDownloadCount,
   savePendingDocId,
 } from '@/constants/guestBilling';
+import { waitForDocumentDownloadReady } from '@/utils/billingCheckout';
 import { useI18n } from '@/composables/useI18n';
 import { useSiteNav } from '@/composables/useSiteNav';
 
@@ -199,10 +200,13 @@ function onProUpgraded() {
   message.value = t('generator.messages.proActivated');
 }
 
-function onDocumentPaid() {
+function onDocumentPaid(doc) {
   paymentModalDocId.value = null;
   message.value = t('generator.messages.paidProcessing');
   loadDocuments();
+  if (doc?.id && doc.status === 'completed') {
+    downloadDoc(doc.id);
+  }
 }
 
 function billingLabel(doc) {
@@ -300,11 +304,42 @@ watch(
 onMounted(async () => {
   syncGuestTrialsFromStorage();
   await loadDocuments();
-  const autoId = route.query.autoDownload;
-  if (autoId != null && String(autoId).trim() !== '') {
-    await downloadDoc(String(autoId));
+
+  const checkoutStatus = route.query.checkout;
+  const docIdFromCheckout = route.query.docId;
+  const flow = route.query.flow;
+  const legacyPro = route.query.pro === 'success';
+
+  if (checkoutStatus === 'success' || legacyPro) {
+    try {
+      await auth.fetchUser();
+    } catch {
+      /* noop */
+    }
+
+    if (flow === 'pro' || legacyPro) {
+      message.value = t('generator.messages.proActivated');
+    } else if (flow === 'registration') {
+      message.value = t('generator.messages.accountActivated');
+    }
+
+    const autoId = docIdFromCheckout ?? route.query.autoDownload;
+    if (autoId != null && String(autoId).trim() !== '') {
+      try {
+        message.value = t('generator.messages.paidProcessing');
+        await waitForDocumentDownloadReady(http, String(autoId));
+        await downloadDoc(String(autoId));
+      } catch (e) {
+        message.value = e?.message || t('generator.messages.downloadFailed');
+      }
+    }
+
+    router.replace({ path: route.path, query: {} });
+  } else if (route.query.autoDownload != null && String(route.query.autoDownload).trim() !== '') {
+    await downloadDoc(String(route.query.autoDownload));
     router.replace({ path: route.path, query: {} });
   }
+
   pollTimer = setInterval(async () => {
     if (!hasActiveJobs.value) return;
     try {

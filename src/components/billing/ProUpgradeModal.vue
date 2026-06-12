@@ -1,11 +1,10 @@
 <script setup>
 import { onMounted, ref } from 'vue';
-import { CreditCard, Crown, ExternalLink, Loader2, X } from 'lucide-vue-next';
+import { Crown, Loader2, X } from 'lucide-vue-next';
 import http from '@/services/api';
-import { usePaddle } from '@/composables/usePaddle';
 import { useI18n } from '@/composables/useI18n';
-import { useAuthStore } from '@/stores/auth';
 import { useClientConfigStore } from '@/stores/clientConfig';
+import { parsePaddleInitiateResponse, redirectToPaddleCheckout } from '@/utils/billingCheckout';
 
 const props = defineProps({
   formattedPrice: { type: String, default: '$5.99' },
@@ -13,55 +12,13 @@ const props = defineProps({
 
 const emit = defineEmits(['upgraded', 'close']);
 
-const auth = useAuthStore();
 const clientConfig = useClientConfigStore();
-const paddle = usePaddle();
 const { t } = useI18n();
 
 const loading = ref(true);
 const submitting = ref(false);
 const error = ref('');
-const paymentId = ref(null);
-const checkoutProvider = ref('demo');
-const transactionId = ref(null);
-const checkoutUrl = ref(null);
-const cardNumber = ref('4242 4242 4242 4242');
-const cardExp = ref('12/30');
-const cardCvc = ref('123');
-
-const isPaddleCheckout = () => checkoutProvider.value === 'paddle';
-
-async function handlePaddleSuccess(data) {
-  if (data.user) {
-    auth.user = data.user;
-  }
-  emit('upgraded', data.user);
-}
-
-async function startPaddleFlow() {
-  submitting.value = true;
-  error.value = '';
-  try {
-    if (transactionId.value || checkoutUrl.value) {
-      await paddle.openCheckout(transactionId.value, checkoutUrl.value);
-    } else {
-      throw new Error(t('billing.pro.errors.incomplete'));
-    }
-
-    const data = await paddle.pollPaymentStatus(paymentId.value, {
-      onTick: (payload) => {
-        if (payload.user) {
-          auth.user = payload.user;
-        }
-      },
-    });
-    await handlePaddleSuccess(data);
-  } catch (e) {
-    error.value = paddle.error.value || e?.response?.data?.message || e?.message || t('billing.pro.errors.confirmFailed');
-  } finally {
-    submitting.value = false;
-  }
-}
+const isDemo = ref(false);
 
 async function initiateCheckout() {
   loading.value = true;
@@ -81,58 +38,59 @@ async function initiateCheckout() {
     return;
   }
 
+  isDemo.value = clientConfig.paymentProvider === 'demo';
+
   try {
     const { data } = await http.post('/api/billing/pro-subscription/initiate');
-    paymentId.value = data.payment?.id ?? null;
-    checkoutProvider.value = data.checkout?.provider ?? 'demo';
-    transactionId.value = data.checkout?.transaction_id ?? null;
-    checkoutUrl.value = data.checkout?.checkout_url ?? null;
+    const parsed = parsePaddleInitiateResponse(data);
 
-    if (data.user) {
-      auth.user = data.user;
-    }
-    if (!paymentId.value) {
-      error.value = t('billing.pro.errors.intentFailed');
+    if (parsed.success && parsed.checkoutUrl) {
+      redirectToPaddleCheckout(parsed.checkoutUrl);
       return;
     }
 
-    if (isPaddleCheckout()) {
-      await startPaddleFlow();
+    if (isDemo.value && parsed.raw?.payment?.id) {
+      loading.value = false;
+      return;
     }
+
+    throw new Error(parsed.error || t('billing.pro.errors.intentFailed'));
   } catch (e) {
     const data = e?.response?.data ?? {};
     const code = data.code;
-    const detail = data.detail ? ` (${data.detail})` : '';
     if (code === 'PAYMENTS_DISABLED') {
-      error.value = data.message || t('billing.pro.errors.paymentsDisabled');
+      error.value = data.error || data.message || t('billing.pro.errors.paymentsDisabled');
     } else if (code === 'PADDLE_INIT_FAILED') {
-      error.value = (data.message || t('billing.pro.errors.initFailed')) + detail;
+      const detail = data.detail ? ` (${data.detail})` : '';
+      error.value = (data.error || data.message || t('billing.pro.errors.initFailed')) + detail;
     } else {
-      error.value = data.message || t('billing.pro.errors.initFailed');
+      error.value = data.error || data.message || e?.message || t('billing.pro.errors.initFailed');
     }
-  } finally {
     loading.value = false;
   }
 }
 
-async function submitPayment() {
-  if (!paymentId.value) {
-    error.value = t('billing.pro.errors.notStarted');
-    return;
-  }
+async function submitDemoPayment() {
   submitting.value = true;
   error.value = '';
   try {
+    const { data: initData } = await http.post('/api/billing/pro-subscription/initiate');
+    const paymentId = initData?.payment?.id;
+    if (!paymentId) {
+      throw new Error(t('billing.pro.errors.intentFailed'));
+    }
+
     const { data } = await http.post('/api/billing/pro-subscription/confirm', {
-      payment_id: paymentId.value,
+      payment_id: paymentId,
       channel: 'card',
-      card_number: cardNumber.value,
-      card_exp: cardExp.value.trim(),
-      card_cvc: cardCvc.value.trim(),
+      card_number: '4242 4242 4242 4242',
+      card_exp: '12/30',
+      card_cvc: '123',
     });
-    await handlePaddleSuccess(data);
+
+    emit('upgraded', data.user);
   } catch (e) {
-    error.value = e?.response?.data?.message || t('billing.pro.errors.confirmFailed');
+    error.value = e?.response?.data?.error || e?.response?.data?.message || e?.message || t('billing.pro.errors.confirmFailed');
   } finally {
     submitting.value = false;
   }
@@ -165,64 +123,31 @@ onMounted(initiateCheckout);
           {{ t('billing.pro.preparing') }}
         </p>
 
-        <template v-else-if="isPaddleCheckout()">
-          <p class="text-sm text-ink-muted">
-            {{ t('billing.pro.paddleDesc') }}
-          </p>
+        <template v-else-if="isDemo">
+          <p class="text-sm text-ink-muted">{{ t('billing.pro.demoDesc') }}</p>
           <p v-if="error" class="text-sm text-red-400">{{ error }}</p>
-          <p
-            v-else-if="submitting || paddle.waitingPayment"
-            class="text-sm text-ink-muted flex items-center gap-2"
-          >
-            <Loader2 class="w-4 h-4 animate-spin" />
-            {{ t('billing.pro.waiting') }}
-          </p>
           <button
-            v-if="!submitting && !paddle.waitingPayment"
             type="button"
-            class="w-full rounded-full bg-accent text-cream hover:bg-brand-dark py-3 text-sm font-medium inline-flex items-center justify-center gap-2"
-            @click="startPaddleFlow"
+            class="w-full rounded-full bg-accent text-cream hover:bg-brand-dark py-3 text-sm font-medium disabled:opacity-50 inline-flex items-center justify-center gap-2"
+            :disabled="submitting"
+            @click="submitDemoPayment"
           >
-            <ExternalLink class="w-4 h-4" />
-            {{ t('billing.pro.reopenPaddle') }}
+            <Loader2 v-if="submitting" class="w-4 h-4 animate-spin" />
+            {{ submitting ? t('billing.pro.confirming') : t('billing.pro.pay', { price: formattedPrice }) }}
           </button>
         </template>
 
         <template v-else>
-          <p class="text-sm text-ink-muted">
-            {{ t('billing.pro.demoDesc') }}
-          </p>
           <p v-if="error" class="text-sm text-red-400">{{ error }}</p>
-
-          <form v-if="paymentId" class="space-y-4" @submit.prevent="submitPayment">
-            <div>
-              <label class="block text-xs text-ink-muted mb-1">{{ t('common.forms.cardNumber') }}</label>
-              <input
-                v-model="cardNumber"
-                type="text"
-                class="w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm tracking-wider"
-              />
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block text-xs text-ink-muted mb-1">{{ t('common.forms.cardExp') }}</label>
-                <input v-model="cardExp" type="text" class="w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm" />
-              </div>
-              <div>
-                <label class="block text-xs text-ink-muted mb-1">{{ t('common.forms.cardCvc') }}</label>
-                <input v-model="cardCvc" type="text" class="w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm" />
-              </div>
-            </div>
-            <button
-              type="submit"
-              class="w-full rounded-full bg-accent text-cream hover:bg-brand-dark py-3 text-sm font-medium disabled:opacity-50 inline-flex items-center justify-center gap-2"
-              :disabled="submitting"
-            >
-              <Loader2 v-if="submitting" class="w-4 h-4 animate-spin" />
-              <CreditCard v-else class="w-4 h-4" />
-              {{ submitting ? t('billing.pro.confirming') : t('billing.pro.pay', { price: formattedPrice }) }}
-            </button>
-          </form>
+          <p v-else class="text-sm text-ink-muted">{{ t('billing.pro.paddleRedirect') }}</p>
+          <button
+            v-if="error"
+            type="button"
+            class="w-full rounded-full bg-accent text-cream hover:bg-brand-dark py-3 text-sm font-medium"
+            @click="initiateCheckout"
+          >
+            {{ t('billing.pro.retry') }}
+          </button>
         </template>
       </div>
     </div>

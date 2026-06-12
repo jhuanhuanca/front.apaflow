@@ -103,6 +103,7 @@ export default {
     completePayment: 'Completa el pago de {price}.',
     uploadFailed: 'Error al subir el archivo.',
     proActivated: 'Plan Pro activado correctamente.',
+    accountActivated: 'Cuenta activada correctamente.',
     paidProcessing: 'Pago confirmado. Procesando documento…',
     downloadFailed: 'No se pudo descargar el archivo.',
   },

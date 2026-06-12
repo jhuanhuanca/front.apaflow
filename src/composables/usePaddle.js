@@ -1,6 +1,7 @@
 import { ref } from 'vue';
 import http from '@/services/api';
 import { useClientConfigStore } from '@/stores/clientConfig';
+import { redirectToPaddleCheckout } from '@/utils/billingCheckout';
 
 let scriptPromise = null;
 
@@ -82,10 +83,7 @@ export function usePaddle() {
   }
 
   async function openCheckoutUrl(checkoutUrl) {
-    if (!checkoutUrl) {
-      throw new Error('Falta URL de checkout Paddle.');
-    }
-    window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
+    redirectToPaddleCheckout(checkoutUrl);
   }
 
   async function pollPaymentStatus(paymentId, { intervalMs = 2500, maxAttempts = 72, onTick } = {}) {
