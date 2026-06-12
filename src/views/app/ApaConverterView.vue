@@ -43,6 +43,7 @@ const documents = ref([]);
 const guestTrials = ref({ remaining: 1, used: 0, max: 1 });
 const paymentModalDocId = ref(null);
 const showProUpgradeModal = ref(false);
+const retryingDocId = ref(null);
 const paddle = usePaddle();
 
 let pollTimer;
@@ -110,13 +111,21 @@ async function syncPendingDocumentPayments() {
   if (!auth.isAuthenticated) {
     return;
   }
-  const pending = documents.value.filter((d) => d.billing_status === 'pending_payment');
-  if (!pending.length) {
+  const toSync = documents.value.filter((d) => {
+    if (d.billing_status === 'pending_payment') {
+      return true;
+    }
+    if (d.billing_status === 'paid' && d.status === 'failed') {
+      return true;
+    }
+    return false;
+  });
+  if (!toSync.length) {
     return;
   }
   let changed = false;
   await Promise.all(
-    pending.map(async (doc) => {
+    toSync.map(async (doc) => {
       try {
         const { data } = await syncDocumentPayment(http, doc.id);
         if (data?.document?.billing_status === 'paid' || data?.synced) {
@@ -236,6 +245,29 @@ function onDocumentPaid(doc) {
   loadDocuments();
   if (doc?.id && doc.status === 'completed') {
     downloadDoc(doc.id);
+  }
+}
+
+function canRetryDoc(doc) {
+  return auth.isAuthenticated
+    && doc.billing_status === 'paid'
+    && doc.status === 'failed';
+}
+
+async function retryDocProcessing(doc) {
+  if (!canRetryDoc(doc)) {
+    return;
+  }
+  retryingDocId.value = doc.id;
+  message.value = '';
+  try {
+    const { data } = await http.post(`/api/document/${doc.id}/retry-processing`);
+    message.value = data?.message || t('generator.messages.retryQueued');
+    await loadDocuments();
+  } catch (e) {
+    message.value = e?.response?.data?.message || t('generator.messages.retryFailed');
+  } finally {
+    retryingDocId.value = null;
   }
 }
 
@@ -547,6 +579,12 @@ onUnmounted(() => {
                   <p v-if="auth.isAuthenticated && billingLabel(doc)" class="text-[10px] text-ink-faint mt-0.5">
                     {{ billingLabel(doc) }}
                   </p>
+                  <p
+                    v-if="doc.status === 'failed' && doc.last_error"
+                    class="text-[11px] text-red-400/90 mt-1 leading-snug break-words"
+                  >
+                    {{ doc.last_error }}
+                  </p>
                 </div>
               </div>
               <span
@@ -556,7 +594,17 @@ onUnmounted(() => {
                 {{ statusLabel(doc.status, doc.billing_status) }}
               </span>
             </div>
-            <div class="flex items-stretch sm:items-center justify-stretch sm:justify-end gap-2">
+            <div class="flex flex-wrap items-stretch sm:items-center justify-stretch sm:justify-end gap-2">
+              <button
+                v-if="canRetryDoc(doc)"
+                type="button"
+                class="inline-flex items-center justify-center gap-2 text-xs border border-red-400/40 text-red-300 hover:bg-red-500/10 px-4 py-2.5 sm:py-2 rounded-full w-full sm:w-auto touch-target disabled:opacity-50"
+                :disabled="retryingDocId === doc.id"
+                @click="retryDocProcessing(doc)"
+              >
+                <Loader2 v-if="retryingDocId === doc.id" class="w-4 h-4 animate-spin" />
+                {{ t('generator.documents.retry') }}
+              </button>
               <button
                 v-if="auth.isAuthenticated && doc.billing_status === 'pending_payment'"
                 type="button"

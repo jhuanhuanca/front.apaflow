@@ -82,6 +82,7 @@ export default {
     pay: 'Pagar {price}',
     downloadPaid: 'Descargar — $0.99',
     download: 'Descargar .docx',
+    retry: 'Reintentar conversión',
   },
   status: {
     waitingPayment: 'Esperando pago',
@@ -105,6 +106,8 @@ export default {
     proActivated: 'Plan Pro activado correctamente.',
     accountActivated: 'Cuenta activada correctamente.',
     paidProcessing: 'Pago confirmado. Procesando documento…',
+    retryQueued: 'Conversión reencolada. Espera unos segundos y pulsa Actualizar.',
+    retryFailed: 'No se pudo reintentar la conversión.',
     downloadFailed: 'No se pudo descargar el archivo.',
   },
 };

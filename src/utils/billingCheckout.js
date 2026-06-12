@@ -150,6 +150,12 @@ export async function waitForDocumentDownloadReady(http, documentId, {
       if (doc.status === 'completed') {
         return doc;
       }
+      if (doc.status === 'failed') {
+        throw new Error(
+          doc.last_error
+            || 'La conversión falló. Pulsa «Reintentar conversión» o contacta soporte.',
+        );
+      }
     }
   }
 
