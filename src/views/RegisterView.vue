@@ -79,10 +79,17 @@ async function submit() {
       },
     });
   } catch (e) {
-    const bag = e?.response?.data?.errors;
-    error.value = bag
-      ? Object.values(bag).flat().join(' ')
-      : e?.response?.data?.message || t('common.errors.registerFailed');
+    const data = e?.response?.data ?? {};
+    const bag = data.errors;
+    if (bag?.email?.some((m) => /already|registrado|taken|uso/i.test(String(m)))) {
+      error.value = t('auth.register.errors.emailTaken');
+    } else if (bag?.password) {
+      error.value = bag.password.join(' ');
+    } else if (bag) {
+      error.value = Object.values(bag).flat().join(' ');
+    } else {
+      error.value = data.message || t('common.errors.registerFailed');
+    }
   } finally {
     loading.value = false;
   }

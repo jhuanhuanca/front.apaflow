@@ -16,9 +16,31 @@ export function parsePaddleInitiateResponse(data) {
   };
 }
 
+export function extractPaddleTransactionId(checkoutUrl) {
+  if (!checkoutUrl || typeof checkoutUrl !== 'string') {
+    return null;
+  }
+  try {
+    const url = new URL(checkoutUrl, window.location.origin);
+    return url.searchParams.get('_ptxn');
+  } catch {
+    const match = checkoutUrl.match(/[?&]_ptxn=([^&]+)/);
+    return match ? decodeURIComponent(match[1]) : null;
+  }
+}
+
 export function redirectToPaddleCheckout(checkoutUrl) {
   if (!checkoutUrl || typeof checkoutUrl !== 'string') {
     throw new Error('No se recibió checkout_url de Paddle.');
+  }
+
+  const ptxn = extractPaddleTransactionId(checkoutUrl);
+  if (ptxn) {
+    const target = new URL(checkoutUrl, window.location.origin);
+    if (target.origin === window.location.origin) {
+      window.location.href = `${target.pathname}${target.search}${target.hash}`;
+      return;
+    }
   }
 
   window.location.href = checkoutUrl;

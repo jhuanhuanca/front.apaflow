@@ -34,5 +34,8 @@ export default {
     selectedSingle: 'Descarga única $0.99',
     submitPro: 'Crear cuenta y suscribirme a Pro',
     submitSingle: 'Crear cuenta y pagar $0.99',
+    errors: {
+      emailTaken: 'Ese correo ya está registrado. Inicia sesión o usa otro email.',
+    },
   },
 };

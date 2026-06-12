@@ -40,11 +40,13 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function register(payload) {
+    await initSanctumSpaOnce();
     const { data } = await http.post('/api/register', payload);
     user.value = data.user;
   }
 
   async function login(payload) {
+    await initSanctumSpaOnce();
     const { data } = await http.post('/api/login', payload);
     user.value = data.user;
   }

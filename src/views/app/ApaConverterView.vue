@@ -8,6 +8,7 @@ import { useClientConfigStore } from '@/stores/clientConfig';
 import { useSubscriptionStore } from '@/stores/subscription';
 import DocumentPaymentModal from '@/components/billing/DocumentPaymentModal.vue';
 import ProUpgradeModal from '@/components/billing/ProUpgradeModal.vue';
+import { usePaddle } from '@/composables/usePaddle';
 import {
   GUEST_PROCESS_KEY,
   GUEST_DOWNLOAD_KEY,
@@ -42,6 +43,7 @@ const documents = ref([]);
 const guestTrials = ref({ remaining: 1, used: 0, max: 1 });
 const paymentModalDocId = ref(null);
 const showProUpgradeModal = ref(false);
+const paddle = usePaddle();
 
 let pollTimer;
 
@@ -301,9 +303,53 @@ watch(
   },
 );
 
+async function openPaddleCheckoutFromQuery() {
+  const ptxn = route.query._ptxn;
+  if (!ptxn || String(ptxn).trim() === '') {
+    return false;
+  }
+
+  if (!clientConfig.loaded) {
+    try {
+      await clientConfig.bootstrap();
+    } catch {
+      /* noop */
+    }
+  }
+
+  if (!clientConfig.paddle?.client_token) {
+    message.value =
+      'Falta PADDLE_CLIENT_TOKEN en el servidor. Configúralo en Paddle → Developer tools → Client-side tokens.';
+    return true;
+  }
+
+  try {
+    await paddle.openCheckout(String(ptxn));
+    const { _ptxn: _removed, ...restQuery } = route.query;
+    router.replace({ path: route.path, query: restQuery });
+  } catch (e) {
+    message.value = paddle.error.value || e?.message || 'No se pudo abrir el checkout de Paddle.';
+  }
+
+  return true;
+}
+
 onMounted(async () => {
   syncGuestTrialsFromStorage();
   await loadDocuments();
+
+  const openedPaddle = await openPaddleCheckoutFromQuery();
+  if (openedPaddle) {
+    pollTimer = setInterval(async () => {
+      if (!hasActiveJobs.value) return;
+      try {
+        await loadDocuments();
+      } catch {
+        /* noop */
+      }
+    }, 3000);
+    return;
+  }
 
   const checkoutStatus = route.query.checkout;
   const docIdFromCheckout = route.query.docId;

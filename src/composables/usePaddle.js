@@ -1,7 +1,7 @@
 import { ref } from 'vue';
 import http from '@/services/api';
 import { useClientConfigStore } from '@/stores/clientConfig';
-import { redirectToPaddleCheckout } from '@/utils/billingCheckout';
+import { redirectToPaddleCheckout, extractPaddleTransactionId } from '@/utils/billingCheckout';
 
 let scriptPromise = null;
 
@@ -71,15 +71,12 @@ export function usePaddle() {
   }
 
   async function openCheckout(transactionId, checkoutUrl = null) {
-    if (checkoutUrl) {
-      await openCheckoutUrl(checkoutUrl);
-      return;
-    }
-    if (!transactionId) {
+    const ptxn = transactionId || extractPaddleTransactionId(checkoutUrl);
+    if (!ptxn) {
       throw new Error('Falta transaction_id de Paddle.');
     }
     const Paddle = await ensureInitialized();
-    Paddle.Checkout.open({ transactionId });
+    Paddle.Checkout.open({ transactionId: String(ptxn) });
   }
 
   async function openCheckoutUrl(checkoutUrl) {
